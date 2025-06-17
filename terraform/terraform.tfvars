@@ -80,4 +80,8 @@ enable_static_web_functions   = false
 # Custom Domain Configuration (set to false initially, enable after DNS setup)
 enable_custom_domain          = false
 
-container_apps_external_enabled = true
+# container_apps_external_enabled = true
+
+# Container Apps Configuration
+# container_apps_subnet_cidr = "10.0.4.0/23"  # /23 subnet สำหรับ Container Apps (required minimum)
+container_apps_subnet_cidr = "10.0.8.0/21"

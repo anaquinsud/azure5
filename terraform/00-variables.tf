@@ -159,36 +159,6 @@ variable "bastion_tunneling_enabled" {
   default     = true
 }
 
-# ============================================================================
-# CONTAINER APPS VARIABLES (เพิ่ม)
-# ============================================================================
-
-variable "container_apps_external_enabled" {
-  description = "Enable external access to Container Apps (set to false for internal-only access)"
-  type        = bool
-  default     = false
-}
-
-variable "container_apps_subnet_cidr" {
-  description = "CIDR block for Container Apps subnet (must be /23 or larger)"
-  type        = string
-  default     = "10.0.2.0/23"
-  validation {
-    condition     = can(cidrhost(var.container_apps_subnet_cidr, 0))
-    error_message = "The container_apps_subnet_cidr must be a valid CIDR block."
-  }
-}
-
-variable "vm_subnet_cidr" {
-  description = "CIDR block for VM subnet (used for NSG rules)"
-  type        = string
-  default     = "10.0.1.0/24"
-  validation {
-    condition     = can(cidrhost(var.vm_subnet_cidr, 0))
-    error_message = "The vm_subnet_cidr must be a valid CIDR block."
-  }
-}
-
 
 # ============================================================================
 # STATIC WEB APPS VARIABLES (Add to variables.tf)
@@ -259,4 +229,39 @@ variable "location_short" {
   description = "Short name for Azure region (used in naming)"
   type        = string
   default     = "sea"  # Southeast Asia
+}
+
+
+# ============================================================================
+# CONTAINER APPS VARIABLES
+# ============================================================================
+
+variable "container_apps_subnet_cidr" {
+  description = "CIDR block for Container Apps subnet (must be /23 or larger for Container Apps Environment)"
+  type        = string
+  default     = "10.0.4.0/23"  # เปลี่ยนเป็น /23 และไม่ conflict กับ subnet อื่น
+  validation {
+    condition     = can(cidrhost(var.container_apps_subnet_cidr, 0))
+    error_message = "The container_apps_subnet_cidr must be a valid CIDR block."
+  }
+}
+
+variable "vm_subnet_cidr" {
+  description = "CIDR block for VM subnet (used for NSG rules)"
+  type        = string
+  default     = "10.0.1.0/24"
+  validation {
+    condition     = can(cidrhost(var.vm_subnet_cidr, 0))
+    error_message = "The vm_subnet_cidr must be a valid CIDR block."
+  }
+}
+
+variable "enable_zone_redundancy" {
+  description = "Enable zone redundancy for Container Apps Environment"
+  type        = bool
+  default     = true
+  validation {
+    condition     = can(tobool(var.enable_zone_redundancy))
+    error_message = "Zone redundancy must be a boolean value."
+  }
 }

@@ -21,24 +21,30 @@ resource "azurerm_container_registry" "main" {
 }
 
 # ============================================================================
-# CONTAINER APPS ENVIRONMENT
+# CONTAINER APPS ENVIRONMENT (PRIVATE)
 # ============================================================================
 
-# Container Apps Environment
+# Container Apps Environment with VNet integration
 resource "azurerm_container_app_environment" "main" {
   name                       = local.aca_env_name
   location                   = azurerm_resource_group.main.location
   resource_group_name        = azurerm_resource_group.main.name
   log_analytics_workspace_id = azurerm_log_analytics_workspace.main.id
+  
+  # Make it private by specifying VNet configuration
+  infrastructure_subnet_id         = azurerm_subnet.container_apps.id
+  internal_load_balancer_enabled   = true  # This makes it private
+  
+  zone_redundancy_enabled = true
 
   tags = local.common_tags
 }
 
 # ============================================================================
-# CONTAINER APPS (USING LOOPS)
+# CONTAINER APPS (USING LOOPS) - NOW PRIVATE
 # ============================================================================
 
-# Container Apps (Loop)
+# Container Apps (Loop) - Now will be private since environment is private
 resource "azurerm_container_app" "apps" {
   for_each = local.container_apps
   
@@ -81,24 +87,14 @@ resource "azurerm_container_app" "apps" {
     max_replicas = each.value.max_replicas
   }
 
-  # Conditional ingress (only for services with target_port)
+  # Ingress for private access only (no external access)
   dynamic "ingress" {
     for_each = each.value.target_port != null ? [1] : []
     content {
       allow_insecure_connections = false
-      external_enabled           = var.container_apps_external_enabled
+      external_enabled           = false  # Changed to false for private access only
       target_port                = each.value.target_port
       
-      # IP Security Restrictions (only if external is enabled)
-      dynamic "ip_security_restriction" {
-        for_each = var.container_apps_external_enabled ? [1] : []
-        content {
-          name             = "AllowVMSubnet"
-          ip_address_range = var.vm_subnet_cidr
-          action           = "Allow"
-        }
-      }
-
       traffic_weight {
         percentage      = 100
         latest_revision = true

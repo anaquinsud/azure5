@@ -19,6 +19,7 @@ locals {
   subnet_private_name = "snet-${local.base_name}-private"
   subnet_bastion_name = "snet-${local.base_name}-bastion"
   subnet_nat_name     = "snet-${local.base_name}-nat"
+  subnet_container_apps_name = "snet-${local.base_name}-container-apps"
   nsg_name           = "nsg-${local.base_name}"
   nsg_bastion_name   = "nsg-${local.base_name}-bastion"
   
@@ -88,10 +89,10 @@ locals {
   container_apps = {
     "golang-api" = {
       image        = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
-      cpu          = 0.25
-      memory       = "0.5Gi"
-      min_replicas = 1
-      max_replicas = 3
+      cpu          = 0.5
+      memory       = "1Gi"
+      min_replicas = 3
+      max_replicas = 9
       target_port  = 80
       env_vars = {
         "ENVIRONMENT" = var.environment
@@ -101,10 +102,10 @@ locals {
     }
     "nodejs-api" = {
       image        = "nginx:latest"
-      cpu          = 0.25
-      memory       = "0.5Gi"
-      min_replicas = 1
-      max_replicas = 3
+      cpu          = 0.5
+      memory       = "1Gi"
+      min_replicas = 3
+      max_replicas = 9
       target_port  = 80
       env_vars = {
         "ENVIRONMENT" = var.environment
