@@ -12,7 +12,7 @@ locals {
   base_name = "${local.project}-${local.environment}-${local.location}"
   
   # Resource Group
-  resource_group_name = var.resource_group_name != "" ? var.resource_group_name : "rg-${local.base_name}"
+  resource_group_name = var.resource_group_name != "" ? var.resource_group_name : "${local.base_name}-rg"
   
   # Network Resources
   vnet_name           = "${local.base_name}-vnet"
@@ -37,11 +37,12 @@ locals {
   nat_pip_name      = "${local.base_name}-pip-nat"
   
   # Storage (max 24 chars, no special characters)
-  storage_name      = "${local.base_name}-st"
+  storage_name      = "${replace(local.project, "-", "")}${replace(local.environment, "-", "")}${replace(local.location, "-", "")}st"
   
   # Container Apps
   aca_env_name      = "${local.base_name}-cae"
-  acr_name          = "${local.base_name}-acr"
+  acr_name          = "${replace(local.project, "-", "")}${replace(local.environment, "-", "")}${replace(local.location, "-", "")}acr"
+
   
   # Service Bus
   servicebus_name   = "${local.base_name}-sb"
