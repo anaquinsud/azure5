@@ -15,46 +15,46 @@ locals {
   resource_group_name = var.resource_group_name != "" ? var.resource_group_name : "rg-${local.base_name}"
   
   # Network Resources
-  vnet_name           = "vnet-${local.base_name}"
-  subnet_private_name = "snet-${local.base_name}-private"
-  subnet_bastion_name = "snet-${local.base_name}-bastion"
-  subnet_nat_name     = "snet-${local.base_name}-nat"
-  subnet_container_apps_name = "snet-${local.base_name}-container-apps"
-  nsg_name           = "nsg-${local.base_name}"
-  nsg_bastion_name   = "nsg-${local.base_name}-bastion"
+  vnet_name           = "${local.base_name}-vnet"
+  subnet_private_name = "${local.base_name}-snet-private"
+  subnet_bastion_name = "${local.base_name}-snet-bastion"
+  subnet_nat_name     = "${local.base_name}-snet-nat"
+  subnet_container_apps_name = "${local.base_name}-snet-container-apps"
+  nsg_name           = "${local.base_name}-nsg"
+  nsg_bastion_name   = "${local.base_name}-nsg-bastion"
   
   # Virtual Machine
-  vm_name           = "vm-${local.base_name}-nginx"
-  vm_nic_name       = "nic-${local.base_name}-vm"
-  vm_pip_name       = "pip-${local.base_name}-vm"
+  vm_name           = "${local.base_name}-vm-nginx"
+  vm_nic_name       = "${local.base_name}-nic-vm"
+  vm_pip_name       = "${local.base_name}-pip-vm"
   
   # Load Balancer
-  lb_name           = "lb-${local.base_name}"
-  lb_pip_name       = "pip-${local.base_name}-lb"
+  lb_name           = "${local.base_name}-lb"
+  lb_pip_name       = "${local.base_name}-pip-lb"
   
   # NAT Gateway
-  nat_name          = "ng-${local.base_name}"
-  nat_pip_name      = "pip-${local.base_name}-nat"
+  nat_name          = "${local.base_name}-ng"
+  nat_pip_name      = "${local.base_name}-pip-nat"
   
   # Storage (max 24 chars, no special characters)
-  storage_name      = "${replace(local.project, "-", "")}${replace(local.environment, "-", "")}${replace(local.location, "-", "")}st"
+  storage_name      = "${local.base_name}-st"
   
   # Container Apps
-  aca_env_name      = "cae-${local.base_name}"
-  acr_name          = "${replace(local.project, "-", "")}${replace(local.environment, "-", "")}${replace(local.location, "-", "")}acr"
+  aca_env_name      = "${local.base_name}-cae"
+  acr_name          = "${local.base_name}-acr"
   
   # Service Bus
-  servicebus_name   = "sb-${local.base_name}"
+  servicebus_name   = "${local.base_name}-sb"
   
   # Static Web App
-  static_web_name   = "stapp-${local.base_name}"
+  static_web_name   = "${local.base_name}-stapp"
   
   # Log Analytics
-  log_analytics_name = "log-${local.base_name}"
+  log_analytics_name = "${local.base_name}-log"
   
   # Bastion
-  bastion_name      = "bas-${local.base_name}"
-  bastion_pip_name  = "pip-${local.base_name}-bastion"
+  bastion_name      = "${local.base_name}-bas"
+  bastion_pip_name  = "${local.base_name}-pip-bastion"
   
   # Common tags with computed values
   common_tags = merge(var.common_tags, {

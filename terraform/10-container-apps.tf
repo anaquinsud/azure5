@@ -48,7 +48,7 @@ resource "azurerm_container_app_environment" "main" {
 resource "azurerm_container_app" "apps" {
   for_each = local.container_apps
   
-  name                         = "ca-${local.base_name}-${each.key}"
+  name                         = "${local.base_name}-ca-${each.key}"
   resource_group_name          = azurerm_resource_group.main.name
   container_app_environment_id = azurerm_container_app_environment.main.id
   revision_mode                = "Single"
