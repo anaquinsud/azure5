@@ -23,10 +23,8 @@ locals {
   nsg_name           = "${local.base_name}-nsg"
   nsg_bastion_name   = "${local.base_name}-nsg-bastion"
   
-  # Virtual Machine
-  vm_name           = "${local.base_name}-vm-nginx"
-  vm_nic_name       = "${local.base_name}-nic-vm"
-  vm_pip_name       = "${local.base_name}-pip-vm"
+  # VMSS (แทน single VM)
+  vmss_name         = "${local.base_name}-vmss"
   
   # Load Balancer
   lb_name           = "${local.base_name}-lb"
@@ -130,7 +128,7 @@ locals {
   }
   
   # ============================================================================
-  # NETWORK SECURITY RULES CONFIGURATION
+  # NETWORK SECURITY RULES CONFIGURATION (Updated for VMSS)
   # ============================================================================
   
   security_rules = {
@@ -174,8 +172,19 @@ locals {
       source_address_prefix      = "*"
       destination_address_prefix = "*"
     }
-    "Allow-SSH" = {
+    "Allow-SSH-NAT-Pool" = {
       priority                   = 1005
+      direction                  = "Inbound"
+      access                     = "Allow"
+      protocol                   = "Tcp"
+      source_port_range          = "*"
+      destination_port_range     = "22"
+      source_address_prefix      = "AzureLoadBalancer"
+      destination_address_prefix = "*"
+      enabled                    = var.enable_vmss_ssh_access
+    }
+    "Allow-SSH-Direct" = {
+      priority                   = 1006
       direction                  = "Inbound"
       access                     = "Allow"
       protocol                   = "Tcp"
@@ -183,7 +192,7 @@ locals {
       destination_port_range     = "22"
       source_address_prefix      = var.allowed_ssh_cidr
       destination_address_prefix = "*"
-      enabled                    = var.enable_vm_public_ip
+      enabled                    = var.enable_vmss_ssh_access
     }
     "Deny-All-Inbound" = {
       priority                   = 4000

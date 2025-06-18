@@ -40,19 +40,69 @@ variable "enable_nat_gateway" {
 }
 
 # ============================================================================
-# VIRTUAL MACHINE VARIABLES
+# VMSS VARIABLES (แทนที่ VM variables)
 # ============================================================================
+
+variable "availability_zones" {
+  description = "Availability zones for VMSS deployment"
+  type        = list(string)
+  default     = ["1", "2", "3"]
+  validation {
+    condition     = length(var.availability_zones) >= 2
+    error_message = "At least 2 availability zones are required for HA."
+  }
+}
+
+variable "vmss_instance_count" {
+  description = "Initial number of VM instances (should match number of zones)"
+  type        = number
+  default     = 3
+  validation {
+    condition     = var.vmss_instance_count >= 2
+    error_message = "Minimum 2 instances required for HA."
+  }
+}
+
+variable "vmss_min_instances" {
+  description = "Minimum instances (recommend 1 per zone)"
+  type        = number
+  default     = 3
+}
+
+variable "vmss_max_instances" {
+  description = "Maximum instances for cost control"
+  type        = number
+  default     = 9
+}
+
+variable "enable_autoscaling" {
+  description = "Enable autoscaling for VMSS"
+  type        = bool
+  default     = true
+}
+
+variable "enable_scheduled_scaling" {
+  description = "Enable time-based scaling for cost optimization"
+  type        = bool
+  default     = true
+}
+
+variable "enable_vmss_ssh_access" {
+  description = "Enable SSH access to VMSS instances through NAT pool"
+  type        = bool
+  default     = true
+}
 
 variable "vm_size" {
   description = "Size of the virtual machine"
   type        = string
-  default     = "Standard_D2s_v3"
+  default     = "Standard_B2s"
 }
 
 variable "vm_disk_size" {
   description = "Size of the VM OS disk in GB"
   type        = number
-  default     = 256
+  default     = 128
 }
 
 variable "vm_admin_username" {
@@ -67,14 +117,24 @@ variable "vm_ssh_public_key" {
   sensitive   = true
 }
 
-variable "enable_vm_public_ip" {
-  description = "Enable public IP for VM (required for VS Code Remote SSH)"
-  type        = bool
-  default     = true
+variable "storage_type" {
+  description = "Storage account type for cost optimization"
+  type        = string
+  default     = "Standard_LRS"
+  validation {
+    condition     = contains(["Standard_LRS", "StandardSSD_LRS", "Premium_LRS"], var.storage_type)
+    error_message = "Storage type must be Standard_LRS, StandardSSD_LRS, or Premium_LRS."
+  }
+}
+
+variable "cloud_init_script" {
+  description = "Cloud-init script for VMSS instances"
+  type        = string
+  default     = ""
 }
 
 variable "allowed_ssh_cidr" {
-  description = "CIDR block allowed for SSH access (only used when enable_vm_public_ip is true)"
+  description = "CIDR block allowed for SSH access"
   type        = string
   default     = "0.0.0.0/0"
   validation {
@@ -100,7 +160,7 @@ variable "golang_api_fqdn" {
 }
 
 # ============================================================================
-# BASTION VARIABLES (เพิ่มในไฟล์ variables.tf)
+# BASTION VARIABLES
 # ============================================================================
 
 variable "enable_bastion" {
@@ -159,15 +219,14 @@ variable "bastion_tunneling_enabled" {
   default     = true
 }
 
-
 # ============================================================================
-# STATIC WEB APPS VARIABLES (Add to variables.tf)
+# STATIC WEB APPS VARIABLES
 # ============================================================================
 
 variable "static_web_app_location" {
   description = "Azure region for Static Web Apps (limited regions available)"
   type        = string
-  default     = "East Asia"  # Closest to Singapore that supports Static Web Apps
+  default     = "East Asia"
   validation {
     condition     = contains(["West US 2", "Central US", "East US 2", "West Europe", "East Asia"], var.static_web_app_location)
     error_message = "Static Web App location must be one of: West US 2, Central US, East US 2, West Europe, East Asia."
@@ -231,7 +290,6 @@ variable "location_short" {
   default     = "sea"  # Southeast Asia
 }
 
-
 # ============================================================================
 # CONTAINER APPS VARIABLES
 # ============================================================================
@@ -239,7 +297,7 @@ variable "location_short" {
 variable "container_apps_subnet_cidr" {
   description = "CIDR block for Container Apps subnet (must be /23 or larger for Container Apps Environment)"
   type        = string
-  default     = "10.0.4.0/23"  # เปลี่ยนเป็น /23 และไม่ conflict กับ subnet อื่น
+  default     = "10.0.8.0/21"
   validation {
     condition     = can(cidrhost(var.container_apps_subnet_cidr, 0))
     error_message = "The container_apps_subnet_cidr must be a valid CIDR block."

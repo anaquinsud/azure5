@@ -42,32 +42,106 @@ output "nat_gateway_enabled" {
 }
 
 # ============================================================================
-# VIRTUAL MACHINE OUTPUTS
+# VMSS OUTPUTS (แทนที่ VM outputs)
 # ============================================================================
 
-output "vm_id" {
-  description = "ID of the virtual machine"
-  value       = azurerm_linux_virtual_machine.main.id
+output "vmss_id" {
+  description = "ID of the virtual machine scale set"
+  value       = azurerm_linux_virtual_machine_scale_set.main.id
 }
 
-output "vm_private_ip" {
-  description = "Private IP address of the virtual machine"
-  value       = azurerm_network_interface.vm.private_ip_address
+output "vmss_name" {
+  description = "Name of the virtual machine scale set"
+  value       = azurerm_linux_virtual_machine_scale_set.main.name
 }
 
-output "vm_name" {
-  description = "Name of the virtual machine"
-  value       = azurerm_linux_virtual_machine.main.name
+output "vmss_instance_count" {
+  description = "Current number of instances in the scale set"
+  value       = azurerm_linux_virtual_machine_scale_set.main.instances
 }
 
-output "vm_public_ip" {
-  description = "Public IP address of the virtual machine (if enabled)"
-  value       = var.enable_vm_public_ip ? azurerm_public_ip.vm[0].ip_address : null
+output "vmss_zones" {
+  description = "Availability zones for the VMSS"
+  value       = azurerm_linux_virtual_machine_scale_set.main.zones
 }
 
-output "vm_ssh_connection" {
-  description = "SSH connection string for the VM"
-  value       = var.enable_vm_public_ip ? "ssh ${var.vm_admin_username}@${azurerm_public_ip.vm[0].ip_address}" : "Use Azure Bastion or VPN to connect to private IP: ${azurerm_network_interface.vm.private_ip_address}"
+output "autoscaling_enabled" {
+  description = "Whether autoscaling is enabled"
+  value       = var.enable_autoscaling
+}
+
+# ============================================================================
+# LOAD BALANCER OUTPUTS (Updated)
+# ============================================================================
+
+output "load_balancer_id" {
+  description = "ID of the load balancer"
+  value       = azurerm_lb.main.id
+}
+
+output "load_balancer_public_ip" {
+  description = "Public IP address of the load balancer (main access point)"
+  value       = azurerm_public_ip.lb.ip_address
+}
+
+output "load_balancer_frontend_ip" {
+  description = "Frontend IP configuration of the load balancer"
+  value       = azurerm_lb.main.frontend_ip_configuration[0].private_ip_address
+}
+
+# ============================================================================
+# SSH ACCESS OUTPUTS
+# ============================================================================
+
+output "vmss_ssh_instructions" {
+  description = "SSH connection instructions for VMSS instances"
+  value = var.enable_vmss_ssh_access ? {
+    load_balancer_ip = azurerm_public_ip.lb.ip_address
+    ssh_command_template = "ssh -p 5000X ${var.vm_admin_username}@${azurerm_public_ip.lb.ip_address}"
+    port_mapping = "Instance 0: port 50000, Instance 1: port 50001, etc."
+    note = "Replace X in 5000X with instance number (0,1,2...)"
+    examples = [
+      "ssh -p 50000 ${var.vm_admin_username}@${azurerm_public_ip.lb.ip_address}  # Instance 0",
+      "ssh -p 50001 ${var.vm_admin_username}@${azurerm_public_ip.lb.ip_address}  # Instance 1",
+      "ssh -p 50002 ${var.vm_admin_username}@${azurerm_public_ip.lb.ip_address}  # Instance 2"
+    ]
+  } : {
+    load_balancer_ip = azurerm_public_ip.lb.ip_address
+    ssh_command_template = "SSH access disabled"
+    port_mapping = "SSH access disabled"
+    note = "SSH access disabled. Enable by setting enable_vmss_ssh_access = true"
+    examples = ["SSH access is disabled"]
+  }
+}
+
+output "vmss_ssh_connections" {
+  description = "SSH commands for each active instance"
+  value = var.enable_vmss_ssh_access ? [
+    for i in range(var.vmss_instance_count) : {
+      instance = i
+      port = 50000 + i
+      command = "ssh -p ${50000 + i} ${var.vm_admin_username}@${azurerm_public_ip.lb.ip_address}"
+    }
+  ] : []
+}
+
+# Alternative: Separate outputs (simpler approach)
+output "load_balancer_ip" {
+  description = "Load Balancer Public IP"
+  value       = azurerm_public_ip.lb.ip_address
+}
+
+output "ssh_enabled" {
+  description = "Whether SSH access is enabled"
+  value       = var.enable_vmss_ssh_access
+}
+
+output "ssh_examples" {
+  description = "SSH command examples (when enabled)"
+  value = var.enable_vmss_ssh_access ? [
+    "ssh -p 50000 ${var.vm_admin_username}@${azurerm_public_ip.lb.ip_address}  # Instance 0",
+    "ssh -p 50001 ${var.vm_admin_username}@${azurerm_public_ip.lb.ip_address}  # Instance 1", 
+  ] : ["SSH access disabled - enable with enable_vmss_ssh_access = true"]
 }
 
 # ============================================================================
@@ -100,27 +174,9 @@ output "container_apps" {
       name = app.name
       fqdn = app.latest_revision_fqdn
       url  = "https://${app.latest_revision_fqdn}"
+      note = "Private access only - accessible from VMSS instances"
     }
   }
-}
-
-# ============================================================================
-# LOAD BALANCER OUTPUTS
-# ============================================================================
-
-output "load_balancer_id" {
-  description = "ID of the load balancer"
-  value       = azurerm_lb.main.id
-}
-
-output "load_balancer_public_ip" {
-  description = "Public IP address of the load balancer"
-  value       = azurerm_public_ip.lb.ip_address
-}
-
-output "load_balancer_frontend_ip" {
-  description = "Frontend IP configuration of the load balancer"
-  value       = azurerm_lb.main.frontend_ip_configuration[0].private_ip_address
 }
 
 # ============================================================================

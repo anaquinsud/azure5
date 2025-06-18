@@ -1,5 +1,5 @@
 # ============================================================================
-# AZURE LOAD BALANCER
+# AZURE LOAD BALANCER (Updated for VMSS)
 # ============================================================================
 
 # Public IP for Load Balancer
@@ -33,14 +33,6 @@ resource "azurerm_lb_backend_address_pool" "main" {
   name            = "backend-pool"
 }
 
-# Associate VM's Network Interface with Backend Pool
-resource "azurerm_lb_backend_address_pool_address" "vm" {
-  name                    = "vm-backend-address"
-  backend_address_pool_id = azurerm_lb_backend_address_pool.main.id
-  virtual_network_id      = azurerm_virtual_network.main.id
-  ip_address              = azurerm_network_interface.vm.private_ip_address
-}
-
 # Health Probes (Loop)
 resource "azurerm_lb_probe" "probes" {
   for_each = local.lb_probes
@@ -70,4 +62,17 @@ resource "azurerm_lb_rule" "rules" {
   enable_floating_ip             = false
   idle_timeout_in_minutes        = 15
   load_distribution              = "Default"
+}
+
+# NAT Pool for SSH access to VMSS instances
+resource "azurerm_lb_nat_pool" "ssh" {
+  count                          = var.enable_vmss_ssh_access ? 1 : 0
+  resource_group_name            = azurerm_resource_group.main.name
+  loadbalancer_id                = azurerm_lb.main.id
+  name                           = "ssh-nat-pool"
+  protocol                       = "Tcp"
+  frontend_port_start            = 50000
+  frontend_port_end              = 50099
+  backend_port                   = 22
+  frontend_ip_configuration_name = "frontend-ip"
 }
