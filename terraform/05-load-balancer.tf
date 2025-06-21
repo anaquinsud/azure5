@@ -9,6 +9,7 @@ resource "azurerm_public_ip" "lb" {
   resource_group_name = azurerm_resource_group.main.name
   allocation_method   = "Static"
   sku                 = "Standard"
+  zones               = var.availability_zones  # Zone redundant
   tags                = local.common_tags
 }
 
@@ -33,12 +34,14 @@ resource "azurerm_lb_backend_address_pool" "main" {
   name            = "backend-pool"
 }
 
-# Associate VM's Network Interface with Backend Pool
+# Associate VMs' Network Interfaces with Backend Pool - Using Loop
 resource "azurerm_lb_backend_address_pool_address" "vm" {
-  name                    = "vm-backend-address"
+  for_each = local.virtual_machines
+  
+  name                    = "vm-backend-address-${each.key}"
   backend_address_pool_id = azurerm_lb_backend_address_pool.main.id
   virtual_network_id      = azurerm_virtual_network.main.id
-  ip_address              = azurerm_network_interface.vm.private_ip_address
+  ip_address              = azurerm_network_interface.vm[each.key].private_ip_address
 }
 
 # Health Probes (Loop)

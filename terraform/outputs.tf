@@ -26,9 +26,17 @@ output "virtual_network_name" {
   value       = azurerm_virtual_network.main.name
 }
 
-output "private_subnet_id" {
-  description = "ID of the private subnet"
-  value       = azurerm_subnet.private.id
+output "private_subnets" {
+  description = "Information about private subnets"
+  value = {
+    for zone, subnet in azurerm_subnet.private :
+    zone => {
+      id           = subnet.id
+      name         = subnet.name
+      address_prefix = subnet.address_prefixes[0]
+      zone         = zone
+    }
+  }
 }
 
 output "nat_gateway_public_ip" {
@@ -42,36 +50,67 @@ output "nat_gateway_enabled" {
 }
 
 # ============================================================================
-# VIRTUAL MACHINE OUTPUTS
+# VIRTUAL MACHINE OUTPUTS (LOOP-BASED)
 # ============================================================================
 
+output "virtual_machines" {
+  description = "Information about all VMs (loop-based)"
+  value = {
+    for vm_key, vm_config in local.virtual_machines :
+    vm_key => {
+      id         = azurerm_linux_virtual_machine.main[vm_key].id
+      name       = azurerm_linux_virtual_machine.main[vm_key].name
+      private_ip = azurerm_network_interface.vm[vm_key].private_ip_address
+      public_ip  = var.enable_vm_public_ip ? azurerm_public_ip.vm[vm_key].ip_address : null
+      zone       = azurerm_linux_virtual_machine.main[vm_key].zone
+      subnet_id  = azurerm_network_interface.vm[vm_key].ip_configuration[0].subnet_id
+      subnet_name = azurerm_subnet.private[vm_config.subnet_key].name
+    }
+  }
+}
+
+output "vm_ssh_connections" {
+  description = "SSH connection strings for all VMs (loop-based)"
+  value = {
+    for vm_key, vm_config in local.virtual_machines :
+    vm_key => var.enable_vm_public_ip ? 
+      "ssh ${vm_config.admin_username}@${azurerm_public_ip.vm[vm_key].ip_address}" : 
+      "Use Azure Bastion or VPN to connect to private IP: ${azurerm_network_interface.vm[vm_key].private_ip_address}"
+  }
+}
+
+# Legacy outputs for backward compatibility (first VM)
+locals {
+  first_vm_key = keys(local.virtual_machines)[0]
+}
+
 output "vm_id" {
-  description = "ID of the virtual machine"
-  value       = azurerm_linux_virtual_machine.main.id
+  description = "ID of the first virtual machine"
+  value       = azurerm_linux_virtual_machine.main[local.first_vm_key].id
 }
 
 output "vm_private_ip" {
-  description = "Private IP address of the virtual machine"
-  value       = azurerm_network_interface.vm.private_ip_address
+  description = "Private IP address of the first virtual machine"
+  value       = azurerm_network_interface.vm[local.first_vm_key].private_ip_address
 }
 
 output "vm_name" {
-  description = "Name of the virtual machine"
-  value       = azurerm_linux_virtual_machine.main.name
+  description = "Name of the first virtual machine"
+  value       = azurerm_linux_virtual_machine.main[local.first_vm_key].name
 }
 
 output "vm_public_ip" {
-  description = "Public IP address of the virtual machine (if enabled)"
-  value       = var.enable_vm_public_ip ? azurerm_public_ip.vm[0].ip_address : null
+  description = "Public IP address of the first virtual machine (if enabled)"
+  value       = var.enable_vm_public_ip ? azurerm_public_ip.vm[local.first_vm_key].ip_address : null
 }
 
 output "vm_ssh_connection" {
-  description = "SSH connection string for the VM"
-  value       = var.enable_vm_public_ip ? "ssh ${var.vm_admin_username}@${azurerm_public_ip.vm[0].ip_address}" : "Use Azure Bastion or VPN to connect to private IP: ${azurerm_network_interface.vm.private_ip_address}"
+  description = "SSH connection string for the first VM"
+  value       = var.enable_vm_public_ip ? "ssh ${local.virtual_machines[local.first_vm_key].admin_username}@${azurerm_public_ip.vm[local.first_vm_key].ip_address}" : "Use Azure Bastion or VPN to connect to private IP: ${azurerm_network_interface.vm[local.first_vm_key].private_ip_address}"
 }
 
 # ============================================================================
-# CONTAINER APPS OUTPUTS (UPDATED FOR LOOPS)
+# CONTAINER APPS OUTPUTS
 # ============================================================================
 
 output "container_app_environment_id" {
@@ -79,18 +118,7 @@ output "container_app_environment_id" {
   value       = azurerm_container_app_environment.main.id
 }
 
-# Individual app outputs for backward compatibility
-output "golang_api_fqdn" {
-  description = "FQDN of the Golang API Container App"
-  value       = azurerm_container_app.apps["golang-api"].latest_revision_fqdn
-}
-
-output "nodejs_api_fqdn" {
-  description = "FQDN of the Node.js API Container App"
-  value       = azurerm_container_app.apps["nodejs-api"].latest_revision_fqdn
-}
-
-# All container apps output (new)
+# All container apps output
 output "container_apps" {
   description = "All Container Apps information"
   value = {
@@ -103,6 +131,17 @@ output "container_apps" {
     }
   }
 }
+
+# # Individual app outputs for backward compatibility
+# output "golang_api_fqdn" {
+#   description = "FQDN of the Golang API Container App"
+#   value       = azurerm_container_app.apps["golang-api"].latest_revision_fqdn
+# }
+
+# output "nodejs_api_fqdn" {
+#   description = "FQDN of the Node.js API Container App"
+#   value       = azurerm_container_app.apps["nodejs-api"].latest_revision_fqdn
+# }
 
 # ============================================================================
 # LOAD BALANCER OUTPUTS
@@ -124,7 +163,7 @@ output "load_balancer_frontend_ip" {
 }
 
 # ============================================================================
-# STORAGE OUTPUTS (UPDATED FOR LOOPS)
+# STORAGE OUTPUTS
 # ============================================================================
 
 output "storage_account_name" {
@@ -138,13 +177,7 @@ output "storage_account_primary_access_key" {
   sensitive   = true
 }
 
-# Main container for backward compatibility
-output "storage_container_name" {
-  description = "Name of the main storage container"
-  value       = azurerm_storage_container.containers["main"].name
-}
-
-# All storage containers output (new)
+# All storage containers output
 output "storage_containers" {
   description = "All storage containers information"
   value = {
@@ -156,8 +189,14 @@ output "storage_containers" {
   }
 }
 
+# Main container for backward compatibility
+output "storage_container_name" {
+  description = "Name of the main storage container"
+  value       = azurerm_storage_container.containers["main"].name
+}
+
 # ============================================================================
-# SERVICE BUS OUTPUTS (UPDATED FOR LOOPS)
+# SERVICE BUS OUTPUTS
 # ============================================================================
 
 output "servicebus_namespace_name" {
@@ -171,18 +210,7 @@ output "servicebus_connection_string" {
   sensitive   = true
 }
 
-# Individual queues for backward compatibility
-output "cdp_queue_survey_tracking_name" {
-  description = "Name of the CDP queue survey tracking"
-  value       = azurerm_servicebus_queue.queues["cdp-queue-survey-tracking"].name
-}
-
-output "crm_otp_queue_name" {
-  description = "Name of the CRM OTP queue"
-  value       = azurerm_servicebus_queue.queues["crm-otp-queue"].name
-}
-
-# All queues output (new)
+# All queues output
 output "servicebus_queues" {
   description = "All Service Bus queues information"
   value = {
@@ -193,6 +221,17 @@ output "servicebus_queues" {
     }
   }
 }
+
+# # Individual queues for backward compatibility
+# output "cdp_queue_survey_tracking_name" {
+#   description = "Name of the CDP queue survey tracking"
+#   value       = azurerm_servicebus_queue.queues["cdp-queue-survey-tracking"].name
+# }
+
+# output "crm_otp_queue_name" {
+#   description = "Name of the CRM OTP queue"
+#   value       = azurerm_servicebus_queue.queues["crm-otp-queue"].name
+# }
 
 # ============================================================================
 # CONTAINER REGISTRY OUTPUTS
@@ -233,11 +272,6 @@ output "static_web_app_name" {
   value       = azurerm_static_web_app.web_cdp.name
 }
 
-output "static_web_app_location" {
-  description = "Location of the Static Web App"
-  value       = azurerm_static_web_app.web_cdp.location
-}
-
 output "static_web_app_default_host_name" {
   description = "Default hostname of the Static Web App"
   value       = azurerm_static_web_app.web_cdp.default_host_name
@@ -249,27 +283,31 @@ output "static_web_app_api_key" {
   sensitive   = true
 }
 
-output "static_web_app_custom_domain" {
-  description = "Custom domain configured for the Static Web App (if enabled)"
-  value       = var.enable_custom_domain ? var.static_web_app_custom_domain : "Not configured"
-}
-
-output "static_web_container_name" {
-  description = "Name of the static web storage container"
-  value       = azurerm_storage_container.containers["static-web"].name
-}
-
 output "static_web_app_url" {
   description = "URL of the Static Web App"
   value       = "https://${azurerm_static_web_app.web_cdp.default_host_name}"
 }
 
-output "static_web_app_custom_domain_url" {
-  description = "Custom domain URL of the Static Web App (if enabled)"
-  value       = var.enable_custom_domain ? "https://${var.static_web_app_custom_domain}" : "Custom domain not enabled"
+# ============================================================================
+# BASTION OUTPUTS
+# ============================================================================
+
+output "bastion_enabled" {
+  description = "Whether Azure Bastion is enabled"
+  value       = var.enable_bastion
 }
 
-output "dns_cname_record_instructions" {
-  description = "Instructions for setting up DNS CNAME record"
-  value = "To enable custom domain, create a CNAME record: web-cdp.ts-lucky.space -> ${azurerm_static_web_app.web_cdp.default_host_name}"
+output "bastion_public_ip" {
+  description = "Public IP address of the Bastion host (if enabled)"
+  value       = var.enable_bastion ? azurerm_public_ip.bastion[0].ip_address : null
+}
+
+output "bastion_fqdn" {
+  description = "FQDN of the Bastion host (if enabled)"
+  value       = var.enable_bastion ? azurerm_public_ip.bastion[0].fqdn : null
+}
+
+output "container_app_environment_static_ip" {
+  description = "Static IP address of the private Container Apps environment"
+  value       = azurerm_container_app_environment.main.static_ip_address
 }

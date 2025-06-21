@@ -1,58 +1,66 @@
 # ============================================================================
-# VIRTUAL MACHINE
+# VIRTUAL MACHINE (LOOP-BASED MULTI-ZONE)
 # ============================================================================
 
-# Public IP for VM (only created when enabled)
+# Public IP for VMs (only created when enabled) - Using Loop
 resource "azurerm_public_ip" "vm" {
-  count               = var.enable_vm_public_ip ? 1 : 0
-  name                = local.vm_pip_name
+  for_each = var.enable_vm_public_ip ? local.virtual_machines : {}
+  
+  name                = each.value.pip_name
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
   allocation_method   = "Static"
   sku                 = "Standard"
-  tags                = local.common_tags
+  zones               = [each.value.zone]
+  
+  tags = merge(local.common_tags, each.value.tags)
 }
 
-# Network Interface for VM
+# Network Interface for VMs - Using Loop
 resource "azurerm_network_interface" "vm" {
-  name                = local.vm_nic_name
+  for_each = local.virtual_machines
+  
+  name                = each.value.nic_name
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
 
   ip_configuration {
     name                          = "internal"
-    subnet_id                     = azurerm_subnet.private.id
+    subnet_id                     = azurerm_subnet.private[each.value.subnet_key].id
     private_ip_address_allocation = "Dynamic"
     # Conditional public IP assignment
-    public_ip_address_id          = var.enable_vm_public_ip ? azurerm_public_ip.vm[0].id : null
+    public_ip_address_id          = var.enable_vm_public_ip ? azurerm_public_ip.vm[each.key].id : null
   }
 
-  tags = local.common_tags
+  tags = merge(local.common_tags, each.value.tags)
 }
 
-# Virtual Machine with cloud-init for Nginx setup
+# Virtual Machines with zone deployment - Using Loop
 resource "azurerm_linux_virtual_machine" "main" {
-  name                = local.vm_name
+  for_each = local.virtual_machines
+  
+  name                = each.value.name
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
-  size                = var.vm_size
-  admin_username      = var.vm_admin_username
+  size                = each.value.size
+  admin_username      = each.value.admin_username
+  zone                = each.value.zone
 
   disable_password_authentication = true
 
   network_interface_ids = [
-    azurerm_network_interface.vm.id,
+    azurerm_network_interface.vm[each.key].id,
   ]
 
   admin_ssh_key {
-    username   = var.vm_admin_username
-    public_key = var.vm_ssh_public_key
+    username   = each.value.admin_username
+    public_key = each.value.ssh_public_key
   }
 
   os_disk {
     caching              = "ReadWrite"
     storage_account_type = "Premium_LRS"
-    disk_size_gb         = var.vm_disk_size
+    disk_size_gb         = each.value.disk_size
   }
 
   source_image_reference {
@@ -62,5 +70,5 @@ resource "azurerm_linux_virtual_machine" "main" {
     version   = "latest"
   }
 
-  tags = local.common_tags
+  tags = merge(local.common_tags, each.value.tags)
 }

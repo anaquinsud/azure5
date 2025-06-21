@@ -30,7 +30,7 @@ resource "azurerm_bastion_host" "main" {
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
   sku                 = var.bastion_sku
-  scale_units         = var.bastion_scale_units
+  scale_units         = var.bastion_sku == "Standard" ? var.bastion_scale_units : null
 
   ip_configuration {
     name                 = "bastion-ip-config"
@@ -85,64 +85,3 @@ resource "azurerm_subnet_network_security_group_association" "bastion" {
   subnet_id                 = azurerm_subnet.bastion[0].id
   network_security_group_id = azurerm_network_security_group.bastion[0].id
 }
-
-
-# # ============================================================================
-# # CONTAINER APPS OUTPUTS (UPDATED FOR PRIVATE ACCESS)
-# # ============================================================================
-
-# output "container_app_environment_id" {
-#   description = "ID of the Container Apps environment"
-#   value       = azurerm_container_app_environment.main.id
-# }
-
-# output "container_app_environment_default_domain" {
-#   description = "Default domain of the private Container Apps environment"
-#   value       = azurerm_container_app_environment.main.default_domain
-# }
-
-# output "container_app_environment_static_ip" {
-#   description = "Static IP address of the private Container Apps environment"
-#   value       = azurerm_container_app_environment.main.static_ip_address
-# }
-
-# # Individual app outputs for backward compatibility (now private URLs)
-# output "golang_api_fqdn" {
-#   description = "Private FQDN of the Golang API Container App"
-#   value       = azurerm_container_app.apps["golang-api"].latest_revision_fqdn
-# }
-
-# output "nodejs_api_fqdn" {
-#   description = "Private FQDN of the Node.js API Container App" 
-#   value       = azurerm_container_app.apps["nodejs-api"].latest_revision_fqdn
-# }
-
-# # All container apps output (updated for private access)
-# output "container_apps" {
-#   description = "All Container Apps information (private access)"
-#   value = {
-#     for name, app in azurerm_container_app.apps : 
-#     name => {
-#       id           = app.id
-#       name         = app.name
-#       private_fqdn = app.latest_revision_fqdn
-#       private_url  = "https://${app.latest_revision_fqdn}"
-#       note         = "This is a private URL accessible only from within the VNet"
-#     }
-#   }
-# }
-
-# output "container_apps_access_info" {
-#   description = "Information about accessing private Container Apps"
-#   value = {
-#     access_method = "Private network access only"
-#     accessible_from = [
-#       "Virtual machines in the same VNet",
-#       "Resources connected via VNet peering",
-#       "On-premises networks connected via VPN/ExpressRoute",
-#       "Azure Bastion (if enabled)"
-#     ]
-#     static_ip = azurerm_container_app_environment.main.static_ip_address
-#     default_domain = azurerm_container_app_environment.main.default_domain
-#   }
-# }

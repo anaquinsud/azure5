@@ -51,8 +51,8 @@ locals {
     "STATIC_WEB_CONTAINER_NAME"     = azurerm_storage_container.containers["static-web"].name
     "ENVIRONMENT"                   = var.environment
     "PROJECT"                       = local.project
-    "API_BASE_URL"                  = "https://${local.golang_api.latest_revision_fqdn}"
-    "NODEJS_API_URL"                = "https://${local.nodejs_api.latest_revision_fqdn}"
+    # "API_BASE_URL"                  = "https://${local.golang_api.latest_revision_fqdn}"
+    # "NODEJS_API_URL"                = "https://${local.nodejs_api.latest_revision_fqdn}"
   }
 }
 

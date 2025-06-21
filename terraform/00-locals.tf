@@ -14,19 +14,14 @@ locals {
   # Resource Group
   resource_group_name = var.resource_group_name != "" ? var.resource_group_name : "${local.base_name}-rg"
   
-  # Network Resources
-  vnet_name           = "${local.base_name}-vnet"
-  subnet_private_name = "${local.base_name}-snet-private"
-  subnet_bastion_name = "${local.base_name}-snet-bastion"
-  subnet_nat_name     = "${local.base_name}-snet-nat"
-  subnet_container_apps_name = "${local.base_name}-snet-container-apps"
-  nsg_name           = "${local.base_name}-nsg"
-  nsg_bastion_name   = "${local.base_name}-nsg-bastion"
-  
-  # Virtual Machine
-  vm_name           = "${local.base_name}-vm-nginx"
-  vm_nic_name       = "${local.base_name}-nic-vm"
-  vm_pip_name       = "${local.base_name}-pip-vm"
+  # Network Resources - Updated for multi-zone
+  vnet_name                      = "${local.base_name}-vnet"
+  subnet_private_name_prefix     = "${local.base_name}-snet-private"
+  subnet_bastion_name            = "${local.base_name}-snet-bastion"
+  subnet_nat_name                = "${local.base_name}-snet-nat"
+  subnet_container_apps_name     = "${local.base_name}-snet-container-apps"
+  nsg_name                       = "${local.base_name}-nsg"
+  nsg_bastion_name              = "${local.base_name}-nsg-bastion"
   
   # Load Balancer
   lb_name           = "${local.base_name}-lb"
@@ -42,7 +37,6 @@ locals {
   # Container Apps
   aca_env_name      = "${local.base_name}-cae"
   acr_name          = "${replace(local.project, "-", "")}${replace(local.environment, "-", "")}${replace(local.location, "-", "")}acr"
-
   
   # Service Bus
   servicebus_name   = "${local.base_name}-sb"
@@ -64,56 +58,651 @@ locals {
     Location    = local.location
   })
   
+  # Create subnet CIDR blocks for each zone
+  private_subnet_cidrs = {
+    "1" = "10.0.1.0/24"
+    "2" = "10.0.2.0/24"
+  }
+  
+  # ============================================================================
+  # VIRTUAL MACHINES CONFIGURATION (LOOP-BASED)
+  # ============================================================================
+  
+  virtual_machines = {
+    for i in range(var.vm_count) : "vm-${i + 1}" => {
+      name           = "${local.base_name}-vm-nginx-${i + 1}"
+      nic_name       = "${local.base_name}-nic-vm-${i + 1}"
+      pip_name       = "${local.base_name}-pip-vm-${i + 1}"
+      zone           = var.availability_zones[i % length(var.availability_zones)]
+      subnet_key     = var.availability_zones[i % length(var.availability_zones)]
+      size           = var.vm_size
+      disk_size      = var.vm_disk_size
+      admin_username = var.vm_admin_username
+      ssh_public_key = var.vm_ssh_public_key
+      
+      # VM-specific tags
+      tags = {
+        VMName = "${local.base_name}-vm-nginx-${i + 1}"
+        Zone   = var.availability_zones[i % length(var.availability_zones)]
+        Index  = i + 1
+      }
+    }
+  }
+  
   # ============================================================================
   # SERVICE BUS QUEUES CONFIGURATION
   # ============================================================================
   
   servicebus_queues = {
-    "cdp-queue-survey-tracking" = {
+    "samsung-cdp-gateway-message" = {
       enable_partitioning      = false
       max_size_in_megabytes   = 1024
       default_message_ttl     = "P14D"  # 14 days
       lock_duration           = "PT30S" # 30 seconds
     }
-    "crm-otp-queue" = {
+    "samsung-cdp-gateway-message-athena" = {
       enable_partitioning      = false
       max_size_in_megabytes   = 1024
       default_message_ttl     = "PT5M"  # 5 minutes for OTP
       lock_duration           = "PT30S"
     }
+    "samsung-cdp-gateway-message-upload" = {
+      enable_partitioning      = false
+      max_size_in_megabytes   = 1024
+      default_message_ttl     = "P14D"  # 14 days
+      lock_duration           = "PT30S" # 30 seconds
+    }
+    "samsung-cdp-gateway-multicast" = {
+      enable_partitioning      = false
+      max_size_in_megabytes   = 1024
+      default_message_ttl     = "PT5M"  # 5 minutes for OTP
+      lock_duration           = "PT30S"
+    }
+    "samsung-cdp-gateway-richmenu" = {
+      enable_partitioning      = false
+      max_size_in_megabytes   = 1024
+      default_message_ttl     = "P14D"  # 14 days
+      lock_duration           = "PT30S" # 30 seconds
+    }
+    "samsung-cdp-link-tracking" = {
+      enable_partitioning      = false
+      max_size_in_megabytes   = 1024
+      default_message_ttl     = "PT5M"  # 5 minutes for OTP
+      lock_duration           = "PT30S"
+    }
+    "samsung-cdp-new-link-tracking" = {
+      enable_partitioning      = false
+      max_size_in_megabytes   = 1024
+      default_message_ttl     = "P14D"  # 14 days
+      lock_duration           = "PT30S" # 30 seconds
+    }
+    "samsung-cdp-richmenu-tracking" = {
+      enable_partitioning      = false
+      max_size_in_megabytes   = 1024
+      default_message_ttl     = "PT5M"  # 5 minutes for OTP
+      lock_duration           = "PT30S"
+    }
+    "samsung-cdp-send-smart-broadcast" = {
+      enable_partitioning      = false
+      max_size_in_megabytes   = 1024
+      default_message_ttl     = "PT5M"  # 5 minutes for OTP
+      lock_duration           = "PT30S"
+    }
+    "samsung-cdp-smart-broadcast-impresstions" = {
+      enable_partitioning      = false
+      max_size_in_megabytes   = 1024
+      default_message_ttl     = "P14D"  # 14 days
+      lock_duration           = "PT30S" # 30 seconds
+    }
+    "samsung-cdp-survey-tracking" = {
+      enable_partitioning      = false
+      max_size_in_megabytes   = 1024
+      default_message_ttl     = "PT5M"  # 5 minutes for OTP
+      lock_duration           = "PT30S"
+    }
+    "samsung-cdp-tag-tracking" = {
+      enable_partitioning      = false
+      max_size_in_megabytes   = 1024
+      default_message_ttl     = "P14D"  # 14 days
+      lock_duration           = "PT30S" # 30 seconds
+    }
+    "samsung-cdp-unidentify-link" = {
+      enable_partitioning      = false
+      max_size_in_megabytes   = 1024
+      default_message_ttl     = "PT5M"  # 5 minutes for OTP
+      lock_duration           = "PT30S"
+    }
+    "samsung-create-audit-log" = {
+      enable_partitioning      = false
+      max_size_in_megabytes   = 1024
+      default_message_ttl     = "P14D"  # 14 days
+      lock_duration           = "PT30S" # 30 seconds
+    }
+    "samsung-create-audit-log-detail" = {
+      enable_partitioning      = false
+      max_size_in_megabytes   = 1024
+      default_message_ttl     = "PT5M"  # 5 minutes for OTP
+      lock_duration           = "PT30S"
+    }
+    "samsung-create-customer-child-link-tracking" = {
+      enable_partitioning      = false
+      max_size_in_megabytes   = 1024
+      default_message_ttl     = "PT5M"  # 5 minutes for OTP
+      lock_duration           = "PT30S"
+    }
+    "samsung-create-customer-child-note" = {
+      enable_partitioning      = false
+      max_size_in_megabytes   = 1024
+      default_message_ttl     = "PT5M"  # 5 minutes for OTP
+      lock_duration           = "PT30S"
+    }
+    "samsung-create-customer-child-profile" = {
+      enable_partitioning      = false
+      max_size_in_megabytes   = 1024
+      default_message_ttl     = "PT5M"  # 5 minutes for OTP
+      lock_duration           = "PT30S"
+    }
+    "samsung-create-customer-child-survey" = {
+      enable_partitioning      = false
+      max_size_in_megabytes   = 1024
+      default_message_ttl     = "PT5M"  # 5 minutes for OTP
+      lock_duration           = "PT30S"
+    }
+    "samsung-create-customer-child-tag" = {
+      enable_partitioning      = false
+      max_size_in_megabytes   = 1024
+      default_message_ttl     = "PT5M"  # 5 minutes for OTP
+      lock_duration           = "PT30S"
+    }
+    "samsung-create-customer-log" = {
+      enable_partitioning      = false
+      max_size_in_megabytes   = 1024
+      default_message_ttl     = "PT5M"  # 5 minutes for OTP
+      lock_duration           = "PT30S"
+    }
+    "samsung-delete-customer-child-note" = {
+      enable_partitioning      = false
+      max_size_in_megabytes   = 1024
+      default_message_ttl     = "PT5M"  # 5 minutes for OTP
+      lock_duration           = "PT30S"
+    }
+    "samsung-delete-customer-child-tag" = {
+      enable_partitioning      = false
+      max_size_in_megabytes   = 1024
+      default_message_ttl     = "PT5M"  # 5 minutes for OTP
+      lock_duration           = "PT30S"
+    }
+    "samsung-download" = {
+      enable_partitioning      = false
+      max_size_in_megabytes   = 1024
+      default_message_ttl     = "PT5M"  # 5 minutes for OTP
+      lock_duration           = "PT30S"
+    }
+    "samsung-tracking-segment-customer-child" = {
+      enable_partitioning      = false
+      max_size_in_megabytes   = 1024
+      default_message_ttl     = "PT5M"  # 5 minutes for OTP
+      lock_duration           = "PT30S"
+    }
+    # "cdp-queue-survey-tracking" = {
+    #   enable_partitioning      = false
+    #   max_size_in_megabytes   = 1024
+    #   default_message_ttl     = "P14D"  # 14 days
+    #   lock_duration           = "PT30S" # 30 seconds
+    # }
+    # "crm-otp-queue" = {
+    #   enable_partitioning      = false
+    #   max_size_in_megabytes   = 1024
+    #   default_message_ttl     = "PT5M"  # 5 minutes for OTP
+    #   lock_duration           = "PT30S"
+    # }
   }
   
   # ============================================================================
   # CONTAINER APPS CONFIGURATION
   # ============================================================================
   
+  business_hours_config = {
+    timezone            = "Asia/Bangkok"
+    start_time         = "0 8 * * MON-FRI"    # 8:00 AM Monday-Friday
+    end_time           = "0 20 * * MON-FRI"   # 8:00 PM Monday-Friday
+    business_replicas  = "1"                  # จำนวน containers ในเวลาทำการ
+    after_hours_replicas = "0"               # จำนวน containers หลังเลิกงาน
+  }
+
+  weekend_config = {
+    timezone           = "Asia/Bangkok"
+    start_time        = "0 0 * * SAT"        # Saturday 00:00
+    end_time          = "0 0 * * MON"        # Monday 00:00
+    weekend_replicas  = "0"                  # ปิดสุดสัปดาห์
+  }
+
+  standard_scale_rules = [
+    {
+      name = "business-hours-scale"
+      type = "cron"
+      metadata = {
+        timezone        = local.business_hours_config.timezone
+        start          = local.business_hours_config.start_time
+        end            = local.business_hours_config.end_time
+        desiredReplicas = local.business_hours_config.business_replicas
+      }
+    },
+    {
+      name = "after-hours-scale"
+      type = "cron"
+      metadata = {
+        timezone        = local.business_hours_config.timezone
+        start          = local.business_hours_config.end_time
+        end            = local.business_hours_config.start_time
+        desiredReplicas = local.business_hours_config.after_hours_replicas
+      }
+    },
+    {
+      name = "weekend-scale"
+      type = "cron"
+      metadata = {
+        timezone        = local.weekend_config.timezone
+        start          = local.weekend_config.start_time
+        end            = local.weekend_config.end_time
+        desiredReplicas = local.weekend_config.weekend_replicas
+      }
+    }
+  ]
+
   container_apps = {
-    "golang-api" = {
+    # CDP
+    "${local.project}-broadcast-api-${local.environment}" = {
       image        = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
-      cpu          = 0.5
-      memory       = "1Gi"
-      min_replicas = 3
-      max_replicas = 9
+      cpu          = 0.25
+      memory       = "0.5Gi"
+      min_replicas = 0
+      max_replicas = 2
       target_port  = 80
+      scale_rules = local.standard_scale_rules
       env_vars = {
         "ENVIRONMENT" = var.environment
         "PORT"        = "80"
         "API_TYPE"    = "golang"
       }
     }
-    "nodejs-api" = {
+    "${local.project}-cdp-api-${local.environment}" = {
       image        = "nginx:latest"
-      cpu          = 0.5
-      memory       = "1Gi"
-      min_replicas = 3
-      max_replicas = 9
+      cpu          = 0.25
+      memory       = "0.5Gi"
+      min_replicas = 0
+      max_replicas = 2
       target_port  = 80
+      scale_rules = local.standard_scale_rules
       env_vars = {
         "ENVIRONMENT" = var.environment
         "PORT"        = "80"
         "API_TYPE"    = "nodejs"
       }
     }
+    "${local.project}-cdp-segment-api-${local.environment}" = {
+      image        = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+      cpu          = 0.25
+      memory       = "0.5Gi"
+      min_replicas = 0
+      max_replicas = 2
+      target_port  = 80
+      scale_rules = local.standard_scale_rules
+      env_vars = {
+        "ENVIRONMENT" = var.environment
+        "PORT"        = "80"
+        "API_TYPE"    = "golang"
+      }
+    }
+    "${local.project}-download-api-${local.environment}" = {
+      image        = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+      cpu          = 0.25
+      memory       = "0.5Gi"
+      min_replicas = 0
+      max_replicas = 2
+      target_port  = 80
+      scale_rules = local.standard_scale_rules
+      env_vars = {
+        "ENVIRONMENT" = var.environment
+        "PORT"        = "80"
+        "API_TYPE"    = "golang"
+      }
+    }
+    "${local.project}-cron-function-api-${local.environment}" = {
+      image        = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+      cpu          = 0.25
+      memory       = "0.5Gi"
+      min_replicas = 0
+      max_replicas = 2
+      target_port  = 80
+      scale_rules = local.standard_scale_rules
+      env_vars = {
+        "ENVIRONMENT" = var.environment
+        "PORT"        = "80"
+        "API_TYPE"    = "golang"
+      }
+    }
+    "${local.project}-richmenu-api-${local.environment}" = {
+      image        = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+      cpu          = 0.25
+      memory       = "0.5Gi"
+      min_replicas = 0
+      max_replicas = 2
+      target_port  = 80
+      scale_rules = local.standard_scale_rules
+      env_vars = {
+        "ENVIRONMENT" = var.environment
+        "PORT"        = "80"
+        "API_TYPE"    = "golang"
+      }
+    }
+    "${local.project}-link-tracking-api-${local.environment}" = {
+      image        = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+      cpu          = 0.25
+      memory       = "0.5Gi"
+      min_replicas = 0
+      max_replicas = 2
+      target_port  = 80
+      scale_rules = local.standard_scale_rules
+      env_vars = {
+        "ENVIRONMENT" = var.environment
+        "PORT"        = "80"
+        "API_TYPE"    = "golang"
+      }
+    }
+    "${local.project}-project-api-${local.environment}" = {
+      image        = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+      cpu          = 0.25
+      memory       = "0.5Gi"
+      min_replicas = 0
+      max_replicas = 2
+      target_port  = 80
+      scale_rules = local.standard_scale_rules
+      env_vars = {
+        "ENVIRONMENT" = var.environment
+        "PORT"        = "80"
+        "API_TYPE"    = "golang"
+      }
+    }
+    "${local.project}-cdp-member-api-${local.environment}" = {
+      image        = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+      cpu          = 0.25
+      memory       = "0.5Gi"
+      min_replicas = 0
+      max_replicas = 2
+      target_port  = 80
+      scale_rules = local.standard_scale_rules
+      env_vars = {
+        "ENVIRONMENT" = var.environment
+        "PORT"        = "80"
+        "API_TYPE"    = "golang"
+      }
+    }
+    "${local.project}-customer-api-${local.environment}" = {
+      image        = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+      cpu          = 0.25
+      memory       = "0.5Gi"
+      min_replicas = 0
+      max_replicas = 2
+      target_port  = 80
+      scale_rules = local.standard_scale_rules
+      env_vars = {
+        "ENVIRONMENT" = var.environment
+        "PORT"        = "80"
+        "API_TYPE"    = "golang"
+      }
+    }
+    "${local.project}-auth-api-${local.environment}" = {
+      image        = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+      cpu          = 0.25
+      memory       = "0.5Gi"
+      min_replicas = 0
+      max_replicas = 2
+      target_port  = 8000
+      scale_rules = local.standard_scale_rules
+      env_vars = {
+        "ENVIRONMENT" = var.environment
+        "PORT"        = "8000"
+        "API_TYPE"    = "golang"
+      }
+    }
+    "${local.project}-cronjob-api-${local.environment}" = {
+      image        = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+      cpu          = 0.25
+      memory       = "0.5Gi"
+      min_replicas = 0
+      max_replicas = 2
+      target_port  = 80
+      scale_rules = local.standard_scale_rules
+      env_vars = {
+        "ENVIRONMENT" = var.environment
+        "PORT"        = "80"
+        "API_TYPE"    = "golang"
+      }
+    }
+    "${local.project}-pdpa-api-${local.environment}" = {
+      image        = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+      cpu          = 0.25
+      memory       = "0.5Gi"
+      min_replicas = 0
+      max_replicas = 2
+      target_port  = 80
+      scale_rules = local.standard_scale_rules
+      env_vars = {
+        "ENVIRONMENT" = var.environment
+        "PORT"        = "80"
+        "API_TYPE"    = "golang"
+      }
+    }
+    # Chat canter
+    "${local.project}-chat-message-worker-${local.environment}" = {
+      image        = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+      cpu          = 0.25
+      memory       = "0.5Gi"
+      min_replicas = 0
+      max_replicas = 2
+      target_port  = 80
+      scale_rules = local.standard_scale_rules
+      env_vars = {
+        "ENVIRONMENT" = var.environment
+        "PORT"        = "80"
+        "API_TYPE"    = "golang"
+      }
+    }
+    "${local.project}-shopee-shop-api-${local.environment}" = {
+      image        = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+      cpu          = 0.25
+      memory       = "0.5Gi"
+      min_replicas = 0
+      max_replicas = 2
+      target_port  = 80
+      scale_rules = local.standard_scale_rules
+      env_vars = {
+        "ENVIRONMENT" = var.environment
+        "PORT"        = "80"
+        "API_TYPE"    = "golang"
+      }
+    }
+    "${local.project}-lazada-shop-api-${local.environment}" = {
+      image        = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+      cpu          = 0.25
+      memory       = "0.5Gi"
+      min_replicas = 0
+      max_replicas = 2
+      target_port  = 80
+      scale_rules = local.standard_scale_rules
+      env_vars = {
+        "ENVIRONMENT" = var.environment
+        "PORT"        = "80"
+        "API_TYPE"    = "golang"
+      }
+    }
+    "${local.project}-tiktok-shop-api-${local.environment}" = {
+      image        = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+      cpu          = 0.25
+      memory       = "0.5Gi"
+      min_replicas = 0
+      max_replicas = 2
+      target_port  = 80
+      scale_rules = local.standard_scale_rules
+      env_vars = {
+        "ENVIRONMENT" = var.environment
+        "PORT"        = "80"
+        "API_TYPE"    = "golang"
+      }
+    }
+    "${local.project}-tiktok-cronjob-api-${local.environment}" = {
+      image        = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+      cpu          = 0.25
+      memory       = "0.5Gi"
+      min_replicas = 0
+      max_replicas = 2
+      target_port  = 80
+      scale_rules = local.standard_scale_rules
+      env_vars = {
+        "ENVIRONMENT" = var.environment
+        "PORT"        = "80"
+        "API_TYPE"    = "golang"
+      }
+    }
+    "${local.project}-tiktok-chat-api-${local.environment}" = {
+      image        = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+      cpu          = 0.25
+      memory       = "0.5Gi"
+      min_replicas = 0
+      max_replicas = 2
+      target_port  = 80
+      scale_rules = local.standard_scale_rules
+      env_vars = {
+        "ENVIRONMENT" = var.environment
+        "PORT"        = "80"
+        "API_TYPE"    = "golang"
+      }
+    }
+    "${local.project}-youtube-api-${local.environment}" = {
+      image        = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+      cpu          = 0.25
+      memory       = "0.5Gi"
+      min_replicas = 0
+      max_replicas = 2
+      target_port  = 80
+      scale_rules = local.standard_scale_rules
+      env_vars = {
+        "ENVIRONMENT" = var.environment
+        "PORT"        = "80"
+        "API_TYPE"    = "golang"
+      }
+    }
+    "${local.project}-youtube-cronjob-api-${local.environment}" = {
+      image        = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+      cpu          = 0.25
+      memory       = "0.5Gi"
+      min_replicas = 0
+      max_replicas = 2
+      target_port  = 80
+      scale_rules = local.standard_scale_rules
+      env_vars = {
+        "ENVIRONMENT" = var.environment
+        "PORT"        = "80"
+        "API_TYPE"    = "golang"
+      }
+    }
+    "${local.project}-chat-cron-func-api-${local.environment}" = {
+      image        = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+      cpu          = 0.25
+      memory       = "0.5Gi"
+      min_replicas = 0
+      max_replicas = 2
+      target_port  = 80
+      scale_rules = local.standard_scale_rules
+      env_vars = {
+        "ENVIRONMENT" = var.environment
+        "PORT"        = "80"
+        "API_TYPE"    = "golang"
+      }
+    }
+    "${local.project}-chat-cronjob-api-${local.environment}" = {
+      image        = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+      cpu          = 0.25
+      memory       = "0.5Gi"
+      min_replicas = 0
+      max_replicas = 2
+      target_port  = 80
+      scale_rules = local.standard_scale_rules
+      env_vars = {
+        "ENVIRONMENT" = var.environment
+        "PORT"        = "80"
+        "API_TYPE"    = "golang"
+      }
+    }
+    "${local.project}-chat-api-${local.environment}" = {
+      image        = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+      cpu          = 0.25
+      memory       = "0.5Gi"
+      min_replicas = 0
+      max_replicas = 2
+      target_port  = 80
+      scale_rules = local.standard_scale_rules
+      env_vars = {
+        "ENVIRONMENT" = var.environment
+        "PORT"        = "80"
+        "API_TYPE"    = "golang"
+      }
+    }
+    "${local.project}-chat-upload-api-${local.environment}" = {
+      image        = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+      cpu          = 0.25
+      memory       = "0.5Gi"
+      min_replicas = 0
+      max_replicas = 2
+      target_port  = 80
+      scale_rules = local.standard_scale_rules
+      env_vars = {
+        "ENVIRONMENT" = var.environment
+        "PORT"        = "80"
+        "API_TYPE"    = "golang"
+      }
+    }
+    "${local.project}-chat-webhook-api-${local.environment}" = {
+      image        = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+      cpu          = 0.25
+      memory       = "0.5Gi"
+      min_replicas = 0
+      max_replicas = 2
+      target_port  = 80
+      scale_rules = local.standard_scale_rules
+      env_vars = {
+        "ENVIRONMENT" = var.environment
+        "PORT"        = "80"
+        "API_TYPE"    = "golang"
+      }
+    }
+    # "golang-api" = {
+    #   image        = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+    #   cpu          = 0.5
+    #   memory       = "1Gi"
+    #   min_replicas = 3
+    #   max_replicas = 9
+    #   target_port  = 80
+    #   env_vars = {
+    #     "ENVIRONMENT" = var.environment
+    #     "PORT"        = "80"
+    #     "API_TYPE"    = "golang"
+    #   }
+    # }
+    # "nodejs-api" = {
+    #   image        = "nginx:latest"
+    #   cpu          = 0.5
+    #   memory       = "1Gi"
+    #   min_replicas = 3
+    #   max_replicas = 9
+    #   target_port  = 80
+    #   env_vars = {
+    #     "ENVIRONMENT" = var.environment
+    #     "PORT"        = "80"
+    #     "API_TYPE"    = "nodejs"
+    #   }
+    # }
   }
   
   # ============================================================================

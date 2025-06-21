@@ -35,7 +35,7 @@ resource "azurerm_container_app_environment" "main" {
   infrastructure_subnet_id         = azurerm_subnet.container_apps.id
   internal_load_balancer_enabled   = true  # This makes it private
   
-  zone_redundancy_enabled = true
+  zone_redundancy_enabled = false
 
   tags = local.common_tags
 }
@@ -48,7 +48,7 @@ resource "azurerm_container_app_environment" "main" {
 resource "azurerm_container_app" "apps" {
   for_each = local.container_apps
   
-  name                         = "${local.base_name}-ca-${each.key}"
+  name                         = "${each.key}"
   resource_group_name          = azurerm_resource_group.main.name
   container_app_environment_id = azurerm_container_app_environment.main.id
   revision_mode                = "Single"
@@ -85,6 +85,15 @@ resource "azurerm_container_app" "apps" {
 
     min_replicas = each.value.min_replicas
     max_replicas = each.value.max_replicas
+
+    dynamic "custom_scale_rule" {
+      for_each = each.value.scale_rules
+      content {
+        name             = custom_scale_rule.value.name
+        custom_rule_type = custom_scale_rule.value.type
+        metadata         = custom_scale_rule.value.metadata
+      }
+    }
   }
 
   # Ingress for private access only (no external access)
@@ -92,7 +101,7 @@ resource "azurerm_container_app" "apps" {
     for_each = each.value.target_port != null ? [1] : []
     content {
       allow_insecure_connections = false
-      external_enabled           = false  # Changed to false for private access only
+      external_enabled           = true  # Changed to false for private access only
       target_port                = each.value.target_port
       
       traffic_weight {
@@ -109,9 +118,9 @@ resource "azurerm_container_app" "apps" {
 # LEGACY REFERENCES (for backward compatibility)
 # ============================================================================
 
-# Create local references for existing outputs that expect specific resource names
-locals {
-  # Map the loop-created resources to expected names for backward compatibility
-  golang_api = azurerm_container_app.apps["golang-api"]
-  nodejs_api = azurerm_container_app.apps["nodejs-api"]
-}
+# # Create local references for existing outputs that expect specific resource names
+# locals {
+#   # Map the loop-created resources to expected names for backward compatibility
+#   golang_api = azurerm_container_app.apps["golang-api"]
+#   nodejs_api = azurerm_container_app.apps["nodejs-api"]
+# }

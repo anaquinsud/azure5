@@ -28,6 +28,8 @@ resource "azurerm_network_security_group" "main" {
 
 # Associate NSG with private subnet
 resource "azurerm_subnet_network_security_group_association" "private" {
-  subnet_id                 = azurerm_subnet.private.id
+  for_each = azurerm_subnet.private
+  
+  subnet_id                 = each.value.id
   network_security_group_id = azurerm_network_security_group.main.id
 }

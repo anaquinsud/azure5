@@ -2,19 +2,21 @@
 # GENERAL CONFIGURATION
 # ============================================================================
 
-project_name   = "cdp"
-location_short = "sea"
+project_name        = "samsung"
+location_short      = "sea"
 environment         = "dev"
 location           = "Southeast Asia"  # Singapore region
-# resource_group_name = "rg-terraform-singapore-dev"
-resource_group_name = ""
+resource_group_name = ""  # Auto-generated if empty
 
 # ============================================================================
 # NETWORK CONFIGURATION
 # ============================================================================
 
-# ปิด NAT Gateway เพื่อประหยัดค่าใช้จ่าย (VM จะใช้ Public IP สำหรับ outbound)
-enable_nat_gateway = false
+# Enable NAT Gateway for outbound internet access from private subnets
+enable_nat_gateway = true
+
+# Container Apps subnet CIDR (must be /21 or larger)
+container_apps_subnet_cidr = "10.0.8.0/21"
 
 # ============================================================================
 # TAGS CONFIGURATION
@@ -29,43 +31,52 @@ common_tags = {
 }
 
 # ============================================================================
-# VIRTUAL MACHINE CONFIGURATION
+# VIRTUAL MACHINE CONFIGURATION (LOOP-BASED)
 # ============================================================================
 
+# Number of VMs to create
+vm_count = 1
+
+# Availability zones for VM deployment
+availability_zones = ["1"]
+
+# VM specifications
 vm_size            = "Standard_D2s_v3"
-vm_disk_size       = 256
+vm_disk_size       = 64
 vm_admin_username  = "azureuser"
 
 # SSH Public Key - Replace with your actual SSH public key
-vm_ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC37VjudioaJNAwKk7qHcGmiGLnh5+CdX07ZjhIP1xgcYyhDdhxKNS/L5nxD3NbP++YV8ZcFtLxl7k8QwAFNEZRBR4U0tpTheqCfILP/d1ZnNcSp6r+T3wtnDi5VuPfwNfUyNDYrP8IQDkr9jbHTk967Wsk7M15q+xa5lcQQGeTqdyRkLahkUSfixaQunJDRsxSQhyR7U5IvRNKF2pbH7Q65tWSqC/iSKOx8inRxa5mZKMEB7idplZ/xXoUl8B07byJeRgn5wpy6/JvaFj5TG+OC9EJKZigd8Y5zOif6q20vtxEGf0p2PPqa2XFXHuMaGC3/l13SgnQwEaQusVk5ZG2qs2pZpi66VkFeR7ZgdFdAF2IkJa7BcPwDdi/SmdCOZmYYfpcmHGgT9NBh5coOGCuzSB7k5di+vr/uQBOqjnxBxz5+005XjJrsu/WY0m0JCffoi1LduYmlcSm8X+Mes86rFvUtu4SaTwMTtQmoLmavxftBMjptAItMN3N/wO9RdNLKdLcsS3mnzdr6kngG3S5YVTn77hTNro6ImtGymfFRwdMkjljlTdbjUPZnN5mMsNJtYpzIw5lxARb6DXSUY1zWFRp+JKiEojVOSvob+Q39eGZX1SYS1W7rL9JppckqegrzI6rei459dqud8QzQMnCES0l83B/IPzHeltKy44mXw== emetworksprom2@EmetS-MacBook-Pro-M3.local"
+vm_ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDSZs6t3CddFPgQ8FA20lSNI8fjZ8vaDDHxccRHJLjptK0f7Prdj3moiYcNpHG05CZeWP35/2h98rjkAmZ7bAHPYZJ32vXNNefiNJZ7unUDyH8NJ0x7TCIhFUCx9pCnuTPmWweEuSFmNU8PQrCoSyjL7DIJCQVE/sHTbYJ8MwHyoR5nMjZQms1Z2c+TjxLcm03noJsz+7wQzZu6iWip9DSTieY+10QVORHLmT87+9A0BsMhwaoDNVE7UdEb8IWewoffWCDY7JTbJLnMsbrGmrqQlbPP8fdM3pwUcmQUevjrwur8afoWTEfuQ6na2iqvM9M0m7r03dcgJWTaWFJiRpBv9fYDzTevCmRnN/mbReH8wqwO7dTcwuD//jOjHizqRF0hkoSkxZ/T5ZkN2mW4yY8g9Hqc8QnUqejgI1l+GXKr+DLM9WxYe6z+y1wsZZ5KeFfaGWPqHGVFqBYuoKFSrgt84eI072V8BG7Y52Blo/S2AUt/mHscRbpuM7HRrKyysm0zBypeFdqD/7BoSfVjrBjz+zWv4i9WLaQ9aWXy9PGT3Rlv9FzSnwA+r6c/V2eferveCjrs5AyCH5P3XhEkDir+5iDSJ+dyBlqGUth+Yk6icH4aIUqsZJsJYyM4SwBtanq2STBfbnb23QJLz4ExmfUoVAUgdDOpzep0VpJj8RBzqQ== admin@emetworks.com"
 
-# เปิด Public IP สำหรับ VM (จำเป็นสำหรับ VS Code Remote SSH และ outbound traffic เมื่อไม่มี NAT)
+# Disable Public IP for VMs (use Bastion for secure access)
 enable_vm_public_ip = true
-# allowed_ssh_cidr   = "YOUR_IP_ADDRESS/32"  # Replace with your IP for security
 
-
+# CIDR block allowed for SSH access (only used when enable_vm_public_ip is true)
+allowed_ssh_cidr = "0.0.0.0/0"  # Replace with your IP for security
 
 # ============================================================================
-# BASTION CONFIGURATION (เพิ่มในไฟล์ terraform.tfvars)
+# BASTION CONFIGURATION
 # ============================================================================
 
-# เปิดใช้ Azure Bastion
+# Enable Azure Bastion for secure VM access
 enable_bastion = false
 
-# ใช้ Basic SKU เพื่อประหยัดค่าใช้จ่าย (สำหรับ dev environment)
+# Bastion SKU (Basic or Standard)
 bastion_sku = "Standard"
 
-# สำหรับ Basic SKU จะไม่สามารถตั้งค่า scale_units ได้
-# bastion_scale_units = 2  # ใช้ได้เฉพาะ Standard SKU
+# Bastion scale units (only for Standard SKU)
+bastion_scale_units = 2
 
-# Features สำหรับ Basic SKU
-bastion_copy_paste_enabled = true
+# Bastion features
+bastion_copy_paste_enabled      = true
+bastion_file_copy_enabled       = true
+bastion_ip_connect_enabled      = true
+bastion_shareable_link_enabled  = false
+bastion_tunneling_enabled       = true
 
-# enable_bastion = true
-# bastion_sku = "Standard"
-# bastion_scale_units = 4
-# enable_vm_public_ip = false  # เพื่อความปลอดภัย
-
+# ============================================================================
+# STATIC WEB APP CONFIGURATION
+# ============================================================================
 
 # Static Web App Configuration
 static_web_app_sku_tier       = "Free"  # Use "Standard" for production
@@ -80,8 +91,13 @@ enable_static_web_functions   = false
 # Custom Domain Configuration (set to false initially, enable after DNS setup)
 enable_custom_domain          = false
 
-# container_apps_external_enabled = true
+# ============================================================================
+# CONTAINER APPS CONFIGURATION
+# ============================================================================
 
-# Container Apps Configuration
-# container_apps_subnet_cidr = "10.0.4.0/23"  # /23 subnet สำหรับ Container Apps (required minimum)
-container_apps_subnet_cidr = "10.0.8.0/21"
+# Enable zone redundancy for Container Apps Environment
+enable_zone_redundancy = true
+
+# Container Apps API FQDNs (for external reference)
+nodejs_api_fqdn = "nodejs-api.example.com"
+golang_api_fqdn = "golang-api.example.com"

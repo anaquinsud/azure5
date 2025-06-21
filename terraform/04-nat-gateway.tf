@@ -31,9 +31,10 @@ resource "azurerm_nat_gateway_public_ip_association" "main" {
   public_ip_address_id = azurerm_public_ip.nat[0].id
 }
 
-# Associate NAT Gateway with private subnet (only when NAT is enabled)
+# Associate NAT Gateway with all private subnets (only when NAT is enabled)
 resource "azurerm_subnet_nat_gateway_association" "private" {
-  count          = var.enable_nat_gateway ? 1 : 0
-  subnet_id      = azurerm_subnet.private.id
+  for_each = var.enable_nat_gateway ? azurerm_subnet.private : {}
+  
+  subnet_id      = each.value.id
   nat_gateway_id = azurerm_nat_gateway.main[0].id
 }
