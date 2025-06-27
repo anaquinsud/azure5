@@ -312,12 +312,26 @@ locals {
 
   container_apps = {
     # CDP
+    "${local.project}-cosumer-customer-api-${local.environment}" = {
+      image        = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+      cpu          = 0.25
+      memory       = "0.5Gi"
+      min_replicas = 0
+      max_replicas = 1
+      target_port  = 80
+      scale_rules = local.standard_scale_rules
+      env_vars = {
+        "ENVIRONMENT" = var.environment
+        "PORT"        = "80"
+        "API_TYPE"    = "golang"
+      }
+    }
     "${local.project}-broadcast-api-${local.environment}" = {
       image        = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
       cpu          = 0.25
       memory       = "0.5Gi"
       min_replicas = 0
-      max_replicas = 2
+      max_replicas = 1
       target_port  = 80
       scale_rules = local.standard_scale_rules
       env_vars = {
@@ -331,12 +345,12 @@ locals {
       cpu          = 0.25
       memory       = "0.5Gi"
       min_replicas = 0
-      max_replicas = 2
-      target_port  = 80
+      max_replicas = 1
+      target_port  = 3000
       scale_rules = local.standard_scale_rules
       env_vars = {
         "ENVIRONMENT" = var.environment
-        "PORT"        = "80"
+        "PORT"        = "3000"
         "API_TYPE"    = "nodejs"
       }
     }
@@ -345,7 +359,7 @@ locals {
       cpu          = 0.25
       memory       = "0.5Gi"
       min_replicas = 0
-      max_replicas = 2
+      max_replicas = 1
       target_port  = 80
       scale_rules = local.standard_scale_rules
       env_vars = {
@@ -359,7 +373,7 @@ locals {
       cpu          = 0.25
       memory       = "0.5Gi"
       min_replicas = 0
-      max_replicas = 2
+      max_replicas = 1
       target_port  = 80
       scale_rules = local.standard_scale_rules
       env_vars = {
@@ -373,7 +387,7 @@ locals {
       cpu          = 0.25
       memory       = "0.5Gi"
       min_replicas = 0
-      max_replicas = 2
+      max_replicas = 1
       target_port  = 80
       scale_rules = local.standard_scale_rules
       env_vars = {
@@ -387,7 +401,7 @@ locals {
       cpu          = 0.25
       memory       = "0.5Gi"
       min_replicas = 0
-      max_replicas = 2
+      max_replicas = 1
       target_port  = 80
       scale_rules = local.standard_scale_rules
       env_vars = {
@@ -401,7 +415,7 @@ locals {
       cpu          = 0.25
       memory       = "0.5Gi"
       min_replicas = 0
-      max_replicas = 2
+      max_replicas = 1
       target_port  = 80
       scale_rules = local.standard_scale_rules
       env_vars = {
@@ -415,7 +429,7 @@ locals {
       cpu          = 0.25
       memory       = "0.5Gi"
       min_replicas = 0
-      max_replicas = 2
+      max_replicas = 1
       target_port  = 80
       scale_rules = local.standard_scale_rules
       env_vars = {
@@ -429,7 +443,7 @@ locals {
       cpu          = 0.25
       memory       = "0.5Gi"
       min_replicas = 0
-      max_replicas = 2
+      max_replicas = 1
       target_port  = 80
       scale_rules = local.standard_scale_rules
       env_vars = {
@@ -443,7 +457,7 @@ locals {
       cpu          = 0.25
       memory       = "0.5Gi"
       min_replicas = 0
-      max_replicas = 2
+      max_replicas = 1
       target_port  = 80
       scale_rules = local.standard_scale_rules
       env_vars = {
@@ -457,7 +471,7 @@ locals {
       cpu          = 0.25
       memory       = "0.5Gi"
       min_replicas = 0
-      max_replicas = 2
+      max_replicas = 1
       target_port  = 8000
       scale_rules = local.standard_scale_rules
       env_vars = {
@@ -471,7 +485,7 @@ locals {
       cpu          = 0.25
       memory       = "0.5Gi"
       min_replicas = 0
-      max_replicas = 2
+      max_replicas = 1
       target_port  = 80
       scale_rules = local.standard_scale_rules
       env_vars = {
@@ -485,7 +499,7 @@ locals {
       cpu          = 0.25
       memory       = "0.5Gi"
       min_replicas = 0
-      max_replicas = 2
+      max_replicas = 1
       target_port  = 80
       scale_rules = local.standard_scale_rules
       env_vars = {
@@ -500,12 +514,12 @@ locals {
       cpu          = 0.25
       memory       = "0.5Gi"
       min_replicas = 0
-      max_replicas = 2
-      target_port  = 80
+      max_replicas = 1
+      target_port  = 3000
       scale_rules = local.standard_scale_rules
       env_vars = {
         "ENVIRONMENT" = var.environment
-        "PORT"        = "80"
+        "PORT"        = "3000"
         "API_TYPE"    = "golang"
       }
     }
@@ -514,12 +528,12 @@ locals {
       cpu          = 0.25
       memory       = "0.5Gi"
       min_replicas = 0
-      max_replicas = 2
-      target_port  = 80
+      max_replicas = 1
+      target_port  = 3000
       scale_rules = local.standard_scale_rules
       env_vars = {
         "ENVIRONMENT" = var.environment
-        "PORT"        = "80"
+        "PORT"        = "3000"
         "API_TYPE"    = "golang"
       }
     }
@@ -528,12 +542,12 @@ locals {
       cpu          = 0.25
       memory       = "0.5Gi"
       min_replicas = 0
-      max_replicas = 2
-      target_port  = 80
+      max_replicas = 1
+      target_port  = 3000
       scale_rules = local.standard_scale_rules
       env_vars = {
         "ENVIRONMENT" = var.environment
-        "PORT"        = "80"
+        "PORT"        = "3000"
         "API_TYPE"    = "golang"
       }
     }
@@ -542,12 +556,12 @@ locals {
       cpu          = 0.25
       memory       = "0.5Gi"
       min_replicas = 0
-      max_replicas = 2
-      target_port  = 80
+      max_replicas = 1
+      target_port  = 3000
       scale_rules = local.standard_scale_rules
       env_vars = {
         "ENVIRONMENT" = var.environment
-        "PORT"        = "80"
+        "PORT"        = "3000"
         "API_TYPE"    = "golang"
       }
     }
@@ -556,12 +570,12 @@ locals {
       cpu          = 0.25
       memory       = "0.5Gi"
       min_replicas = 0
-      max_replicas = 2
-      target_port  = 80
+      max_replicas = 1
+      target_port  = 3000
       scale_rules = local.standard_scale_rules
       env_vars = {
         "ENVIRONMENT" = var.environment
-        "PORT"        = "80"
+        "PORT"        = "3000"
         "API_TYPE"    = "golang"
       }
     }
@@ -570,12 +584,12 @@ locals {
       cpu          = 0.25
       memory       = "0.5Gi"
       min_replicas = 0
-      max_replicas = 2
-      target_port  = 80
+      max_replicas = 1
+      target_port  = 3000
       scale_rules = local.standard_scale_rules
       env_vars = {
         "ENVIRONMENT" = var.environment
-        "PORT"        = "80"
+        "PORT"        = "3000"
         "API_TYPE"    = "golang"
       }
     }
@@ -584,12 +598,12 @@ locals {
       cpu          = 0.25
       memory       = "0.5Gi"
       min_replicas = 0
-      max_replicas = 2
-      target_port  = 80
+      max_replicas = 1
+      target_port  = 3000
       scale_rules = local.standard_scale_rules
       env_vars = {
         "ENVIRONMENT" = var.environment
-        "PORT"        = "80"
+        "PORT"        = "3000"
         "API_TYPE"    = "golang"
       }
     }
@@ -598,12 +612,12 @@ locals {
       cpu          = 0.25
       memory       = "0.5Gi"
       min_replicas = 0
-      max_replicas = 2
-      target_port  = 80
+      max_replicas = 1
+      target_port  = 3000
       scale_rules = local.standard_scale_rules
       env_vars = {
         "ENVIRONMENT" = var.environment
-        "PORT"        = "80"
+        "PORT"        = "3000"
         "API_TYPE"    = "golang"
       }
     }
@@ -612,12 +626,12 @@ locals {
       cpu          = 0.25
       memory       = "0.5Gi"
       min_replicas = 0
-      max_replicas = 2
-      target_port  = 80
+      max_replicas = 1
+      target_port  = 3000
       scale_rules = local.standard_scale_rules
       env_vars = {
         "ENVIRONMENT" = var.environment
-        "PORT"        = "80"
+        "PORT"        = "3000"
         "API_TYPE"    = "golang"
       }
     }
@@ -626,12 +640,12 @@ locals {
       cpu          = 0.25
       memory       = "0.5Gi"
       min_replicas = 0
-      max_replicas = 2
-      target_port  = 80
+      max_replicas = 1
+      target_port  = 3000
       scale_rules = local.standard_scale_rules
       env_vars = {
         "ENVIRONMENT" = var.environment
-        "PORT"        = "80"
+        "PORT"        = "3000"
         "API_TYPE"    = "golang"
       }
     }
@@ -640,12 +654,12 @@ locals {
       cpu          = 0.25
       memory       = "0.5Gi"
       min_replicas = 0
-      max_replicas = 2
-      target_port  = 80
+      max_replicas = 1
+      target_port  = 3000
       scale_rules = local.standard_scale_rules
       env_vars = {
         "ENVIRONMENT" = var.environment
-        "PORT"        = "80"
+        "PORT"        = "3000"
         "API_TYPE"    = "golang"
       }
     }
@@ -654,12 +668,12 @@ locals {
       cpu          = 0.25
       memory       = "0.5Gi"
       min_replicas = 0
-      max_replicas = 2
-      target_port  = 80
+      max_replicas = 1
+      target_port  = 3000
       scale_rules = local.standard_scale_rules
       env_vars = {
         "ENVIRONMENT" = var.environment
-        "PORT"        = "80"
+        "PORT"        = "3000"
         "API_TYPE"    = "golang"
       }
     }
@@ -668,12 +682,12 @@ locals {
       cpu          = 0.25
       memory       = "0.5Gi"
       min_replicas = 0
-      max_replicas = 2
-      target_port  = 80
+      max_replicas = 1
+      target_port  = 3000
       scale_rules = local.standard_scale_rules
       env_vars = {
         "ENVIRONMENT" = var.environment
-        "PORT"        = "80"
+        "PORT"        = "3000"
         "API_TYPE"    = "golang"
       }
     }
