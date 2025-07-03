@@ -788,6 +788,26 @@ locals {
       destination_address_prefix = "*"
       enabled                    = var.enable_vm_public_ip
     }
+    "Allow-ClickHouse-HTTP" = {
+      priority                   = 1006
+      direction                  = "Inbound"
+      access                     = "Allow"
+      protocol                   = "Tcp"
+      source_port_range          = "*"
+      destination_port_range     = "8123"
+      source_address_prefix      = "*"
+      destination_address_prefix = "*"
+    }
+    "Allow-ClickHouse-Native" = {
+      priority                   = 1007
+      direction                  = "Inbound"
+      access                     = "Allow"
+      protocol                   = "Tcp"
+      source_port_range          = "*"
+      destination_port_range     = "9000"
+      source_address_prefix      = "*"
+      destination_address_prefix = "*"
+    }
     "Deny-All-Inbound" = {
       priority                   = 4000
       direction                  = "Inbound"
